@@ -1,0 +1,15 @@
+name: 'dbt_airspace'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_airspace'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+models:
+  dbt_airspace:
+    staging:
+      +materialized: view     # Silver stays lightweight as views
+    marts:
+      +materialized: table    # Gold is materialized as fast physical tables for Streamlit

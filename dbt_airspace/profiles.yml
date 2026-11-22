@@ -1,0 +1,7 @@
+dbt_airspace:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/airspace.duckdb
+      threads: 4
