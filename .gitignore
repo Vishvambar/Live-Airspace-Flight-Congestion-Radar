@@ -1,0 +1,18 @@
+# Environments
+venv/
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# DBT & logs
+dbt_airspace/logs/
+dbt_airspace/target/
+dbt_airspace/.user.yml
+
+# Streamlit
+.streamlit/
+
