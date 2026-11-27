@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Inter', Arial, sans-serif; }
+  body { background: #ffffff; padding: 32px; width: 1320px; }
+  .canvas {
+    border: 2px solid #cbd5e1;
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 28px;
+  }
+  .title { text-align: center; font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+  .subtitle { text-align: center; font-size: 13px; color: #475569; margin-bottom: 26px; }
+  .grid { display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr; align-items: center; gap: 10px; }
+  .box {
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .box.green { border-color: #16a34a; background: #f0fdf4; }
+  .box.amber { border-color: #d97706; background: #fffbeb; }
+  .box.slate { border-color: #475569; background: #f1f5f9; }
+  .box.teal  { border-color: #0d9488; background: #f0fdfa; }
+  .box h4 { font-size: 13.5px; color: #0f172a; margin-bottom: 6px; }
+  .box p, .box li { font-size: 11.5px; color: #334155; line-height: 1.45; }
+  .box ul { padding-left: 16px; }
+  .arr { text-align: center; font-size: 24px; font-weight: 900; color: #475569; }
+  .down-row { display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr; margin: 10px 0; }
+  .down-arr { text-align: center; font-size: 22px; font-weight: 900; color: #475569; }
+  .code { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 4px; }
+  .decision {
+    border: 2px dashed #d97706;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .decision h4 { font-size: 13.5px; color: #92400e; margin-bottom: 6px; }
+  .decision p { font-size: 11.5px; color: #451a03; line-height: 1.45; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="title">Figure 2: End-to-End ETL &amp; Offline Historical Replay Workflow</div>
+    <div class="subtitle">Orchestrated by src/run_pipeline.py with Exam-Room Offline Resilience</div>
+
+    <!-- Row 1: Trigger -> Fetch/Fallback -> Bronze -->
+    <div class="grid">
+      <div class="box">
+        <h4>1. Pipeline Trigger</h4>
+        <ul>
+          <li>CLI: <span class="code">--once</span>, <span class="code">--loop</span>, <span class="code">--bank 25</span>, or <span class="code">--rebuild</span></li>
+          <li>UI: Streamlit <strong>"Fetch Live Telemetry"</strong> button or <strong>Replay Slider</strong></li>
+        </ul>
+      </div>
+      <div class="arr">➜</div>
+      <div class="decision">
+        <h4>2. Network &amp; Rate-Limit Check</h4>
+        <p><strong>Online &amp; Within Quota:</strong> Fetch live JSON from OpenSky (<span class="code">timeout=15s</span>).<br>
+        <strong>Offline / HTTP 429:</strong> Fall back to banked Parquet snapshots or synthetic track projection.</p>
+      </div>
+      <div class="arr">➜</div>
+      <div class="box amber">
+        <h4>3. Bronze Write (Immutable)</h4>
+        <ul>
+          <li>Save <span class="code">data/bronze/states_&lt;time&gt;.parquet</span></li>
+          <li>Append raw rows to DuckDB <span class="code">bronze_states</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Down Arrow on Right -->
+    <div class="down-row">
+      <div></div><div></div><div></div><div></div><div class="down-arr">⬇</div>
+    </div>
+
+    <!-- Row 2: Dashboard <- Gold <- Silver -->
+    <div class="grid">
+      <div class="box teal">
+        <h4>6. Streamlit War Room UI</h4>
+        <ul>
+          <li><strong>Live Ingest</strong> or <strong>Historical Replay</strong></li>
+          <li>Filters: Flight Phase, Country, Altitude</li>
+          <li>3 Tabs: Radar, Analytics, Pipeline Health</li>
+        </ul>
+      </div>
+      <div class="arr">⬅</div>
+      <div class="box green">
+        <h4>5. Gold Analytical Marts</h4>
+        <ul>
+          <li><span class="code">gold_airspace_congestion</span></li>
+          <li><span class="code">gold_country_summary</span></li>
+          <li><span class="code">gold_flight_anomalies</span></li>
+        </ul>
+      </div>
+      <div class="arr">⬅</div>
+      <div class="box slate">
+        <h4>4. Silver Cleaning &amp; DQ Audit</h4>
+        <ul>
+          <li>Filter null lat/lon &amp; deduplicate</li>
+          <li>Convert units (ft, knots, fpm)</li>
+          <li>Log metrics to <span class="code">dq_audit_log</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

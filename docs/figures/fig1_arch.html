@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Inter', Arial, sans-serif; }
+  body { background: #ffffff; padding: 32px; width: 1400px; }
+  .canvas {
+    border: 2px solid #cbd5e1;
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 28px;
+  }
+  .title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 26px;
+  }
+  .row {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .stage {
+    flex: 1;
+    border-radius: 12px;
+    padding: 16px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .stage.source { border-color: #3b82f6; background: #eff6ff; flex: 0.82; }
+  .stage.bronze { border-color: #b45309; background: #fffbeb; }
+  .stage.silver { border-color: #64748b; background: #f1f5f9; }
+  .stage.gold   { border-color: #ca8a04; background: #fefce8; }
+  .stage.ui     { border-color: #0f766e; background: #f0fdfa; flex: 0.95; }
+
+  .stage-header {
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .source .stage-header { color: #1d4ed8; }
+  .bronze .stage-header { color: #92400e; }
+  .silver .stage-header { color: #334155; }
+  .gold   .stage-header { color: #854d0e; }
+  .ui     .stage-header { color: #115e59; }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.08);
+    font-weight: 700;
+  }
+  .card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card h4 { font-size: 13px; color: #0f172a; margin-bottom: 4px; }
+  .card p, .card li { font-size: 11.5px; color: #475569; line-height: 1.45; }
+  .card ul { padding-left: 16px; }
+  .code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 10.5px;
+    background: #f1f5f9;
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 900;
+    color: #475569;
+    flex: 0 0 22px;
+  }
+  .footer-bar {
+    margin-top: 20px;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .footer-bar strong { color: #38bdf8; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="title">Figure 1: System Architecture of Live Airspace Radar (Medallion Pipeline)</div>
+    <div class="subtitle">End-to-End ADS-B Telemetry Processing over Indian Airspace (6.0°N–37.0°N, 68.0°E–97.5°E)</div>
+
+    <div class="row">
+      <!-- SOURCE -->
+      <div class="stage source">
+        <div class="stage-header">Data Source <span class="badge">REST API</span></div>
+        <div class="card">
+          <h4>OpenSky Network API</h4>
+          <p><span class="code">GET /api/states/all</span></p>
+          <p style="margin-top:4px;">Returns 18-element ADS-B aircraft state vectors every 60–120s (~252 aircraft/call).</p>
+        </div>
+        <div class="card">
+          <h4>Auth &amp; Resilience</h4>
+          <ul>
+            <li>OAuth2 Bearer / Basic / Anonymous</li>
+            <li>15s timeout &amp; bounding-box filter</li>
+            <li>Offline Replay fallback</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- BRONZE -->
+      <div class="stage bronze">
+        <div class="stage-header">Bronze Layer <span class="badge">RAW</span></div>
+        <div class="card">
+          <h4>src/ingest.py</h4>
+          <ul>
+            <li>Maps 18 positional fields to DataFrame</li>
+            <li>Stamps <span class="code">snapshot_time</span> &amp; <span class="code">ingested_at_utc</span></li>
+            <li>Zero destructive cleaning</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Immutable Storage</h4>
+          <ul>
+            <li>Parquet: <span class="code">data/bronze/states_*.parquet</span></li>
+            <li>DuckDB: <span class="code">bronze_states</span> table</li>
+            <li>35 snapshots banked (8,770 rows)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- SILVER -->
+      <div class="stage silver">
+        <div class="stage-header">Silver Layer <span class="badge">CLEAN + DQ</span></div>
+        <div class="card">
+          <h4>src/transform_silver.py</h4>
+          <ul>
+            <li>Trim callsigns (<span class="code">UNKNOWN</span> fallback)</li>
+            <li>Drop null GPS (<span class="code">lat/lon NOT NULL</span>)</li>
+            <li>Window dedup: <span class="code">QUALIFY ROW_NUMBER()</span></li>
+            <li>Convert to ft, knots, fpm</li>
+            <li>Engineer <span class="code">flight_phase</span> &amp; 0.1° grid</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>DuckDB Tables</h4>
+          <ul>
+            <li><span class="code">silver_flights</span> (0 null coords)</li>
+            <li><span class="code">dq_audit_log</span> (pass rate %, drops)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- GOLD -->
+      <div class="stage gold">
+        <div class="stage-header">Gold Layer <span class="badge">BI MARTS</span></div>
+        <div class="card">
+          <h4>src/transform_gold.py</h4>
+          <ul>
+            <li><span class="code">gold_airspace_congestion</span><br>0.1° grid heatmap; flags &ge; 5 aircraft as <span class="code">CONGESTION_HOTSPOT</span></li>
+            <li><span class="code">gold_country_summary</span><br>Fleet &amp; flight phase breakdown</li>
+            <li><span class="code">gold_flight_anomalies</span><br>Squawk 7500/7600/7700, &gt;3000 fpm, Low &amp; Fast (&lt;10k ft, &gt;280 kts)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- UI -->
+      <div class="stage ui">
+        <div class="stage-header">War Room UI <span class="badge">STREAMLIT</span></div>
+        <div class="card">
+          <h4>app.py (Plotly Dark Mode)</h4>
+          <ul>
+            <li><strong>Sidebar:</strong> Live Ingest vs. Historical Replay slider + filters</li>
+            <li><strong>Tab 1:</strong> Live Radar Map &amp; 4 KPIs</li>
+            <li><strong>Tab 2:</strong> Density Heatmap, Alt vs. Speed &amp; Anomaly Alerts</li>
+            <li><strong>Tab 3:</strong> Pipeline Health &amp; DQ Audit Log</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <div><strong>Storage &amp; Compute:</strong> Embedded DuckDB (Columnar OLAP) + Apache Parquet</div>
+      <div><strong>Orchestration:</strong> <span class="code" style="background:#1e293b;color:#38bdf8;">src/run_pipeline.py</span> (--once | --loop | --bank | --rebuild)</div>
+      <div><strong>Query SLA:</strong> Gold Marts &lt; 3 ms</div>
+    </div>
+  </div>
+</body>
+</html>
+
